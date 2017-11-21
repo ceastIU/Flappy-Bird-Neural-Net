@@ -13,8 +13,10 @@ SCREENHEIGHT = 512
 # amount by which base can maximum shift to left
 PIPEGAPSIZE  = 150 # gap between upper and lower part of pipe
 BASEY        = SCREENHEIGHT * 0.79
-PIPEDETERMINTISIC = False
+PIPEDETERMINTISIC = True
 DISPLAYSCREEN = True
+DISPLAYWELCOME = False
+NUMBERBIRDS = 2
 # image, sound and hitmask  dicts
 IMAGES, SOUNDS, HITMASKS = {}, {}, {}
 
@@ -108,13 +110,14 @@ def main():
         IMAGES['background'] = pygame.image.load(BACKGROUNDS_LIST[randBg]).convert()
 
         # select random player sprites
-        randPlayer = random.randint(0, len(PLAYERS_LIST) - 1)
-        IMAGES['player'] = (
-            pygame.image.load(PLAYERS_LIST[randPlayer][0]).convert_alpha(),
-            pygame.image.load(PLAYERS_LIST[randPlayer][1]).convert_alpha(),
-            pygame.image.load(PLAYERS_LIST[randPlayer][2]).convert_alpha(),
-        )
-        IMAGES['ball'] = pygame.transform.scale(IMAGES['ball'],(25,25))
+        for i in range(NUMBERBIRDS):
+            randPlayer = random.randint(0, len(PLAYERS_LIST) - 1)
+            IMAGES['Bird '+str(i)] = (
+                pygame.image.load(PLAYERS_LIST[randPlayer][0]).convert_alpha(),
+                pygame.image.load(PLAYERS_LIST[randPlayer][1]).convert_alpha(),
+                pygame.image.load(PLAYERS_LIST[randPlayer][2]).convert_alpha(),
+            )
+        print(IMAGES)
         # select random pipe sprites
         pipeindex = random.randint(0, len(PIPES_LIST) - 1)
         IMAGES['pipe'] = (
@@ -123,21 +126,20 @@ def main():
             pygame.image.load(PIPES_LIST[pipeindex]).convert_alpha(),
         )
 
-        # hismask for pipes
+        # hitmask for pipes
         HITMASKS['pipe'] = (
             getHitmask(IMAGES['pipe'][0]),
             getHitmask(IMAGES['pipe'][1]),
         )
 
         # hitmask for player
-        HITMASKS['player'] = (
-            getHitmask(IMAGES['player'][0]),
-            getHitmask(IMAGES['player'][1]),
-            getHitmask(IMAGES['player'][2]),
-        )
-
-        #HITMASKS['ball'] = getHitmask(IMAGES['ball'])
-
+        for i in range(NUMBERBIRDS):
+            HITMASKS['Bird '+str(i)] = (
+                getHitmask(IMAGES['Bird '+str(i)][0]),
+                getHitmask(IMAGES['Bird '+str(i)][1]),
+                getHitmask(IMAGES['Bird '+str(i)][2]),
+            )
+            print(HITMASKS['Bird '+str(i)])
         movementInfo = showWelcomeAnimation()
         crashInfo = mainGame(movementInfo)
         showGameOverScreen(crashInfo)
@@ -146,14 +148,14 @@ def main():
 def showWelcomeAnimation():
     """Shows welcome screen animation of flappy bird"""
     # index of player to blit on screen
-    playerIndex = 0
+    birdIndex = 0
     # Cycles the birds wings
     playerIndexGen = cycle([0, 1, 2, 1])
     # iterator used to change playerIndex after every 5th iteration
     loopIter = 0
 
     playerx = int(SCREENWIDTH * 0.2)
-    playery = int((SCREENHEIGHT - IMAGES['player'][0].get_height()) / 2)
+    playery = int((SCREENHEIGHT - IMAGES['Bird '+str(birdIndex)][0].get_height()) / 2)
 
     messagex = int((SCREENWIDTH - IMAGES['message'].get_width()) / 2)
     messagey = int(SCREENHEIGHT * 0.12)
@@ -170,7 +172,7 @@ def showWelcomeAnimation():
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 pygame.quit()
                 sys.exit()
-            if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
+            if (event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP)) or DISPLAYWELCOME:
                 # make first flap sound and return values for mainGame
                 SOUNDS['wing'].play()
                 return {
@@ -181,7 +183,7 @@ def showWelcomeAnimation():
 
         # adjust playery, playerIndex, basex
         if (loopIter + 1) % 5 == 0:
-            playerIndex = next(playerIndexGen)
+            birdIndex = next(playerIndexGen)
         loopIter = (loopIter + 1) % 30
         basex = -((-basex + 4) % baseShift)
         playerShm(playerShmVals)
@@ -189,11 +191,10 @@ def showWelcomeAnimation():
         # draw sprites
 
         SCREEN.blit(IMAGES['background'], (0,0))
-        SCREEN.blit(IMAGES['player'][playerIndex],
+        SCREEN.blit(IMAGES['Bird ' + str(0)][birdIndex],
                     (playerx, playery + playerShmVals['val']))
         SCREEN.blit(IMAGES['message'], (messagex, messagey))
         SCREEN.blit(IMAGES['base'], (basex, BASEY))
-        #SCREEN.blit(IMAGES['ball'], (playerx + 10, playery - 10))
         pygame.display.update()
         FPSCLOCK.tick(FPS)
 
@@ -206,10 +207,10 @@ def pause():
                 PAUSE = False
 
 def mainGame(movementInfo):
-    score = playerIndex = loopIter = 0
+    score = birdIndex = loopIter = 0
     playerIndexGen = movementInfo['playerIndexGen']
-    playerx, playery = int(SCREENWIDTH * 0.2), movementInfo['playery']
-
+    initx, inity = int(SCREENWIDTH * 0.2), movementInfo['playery']
+    birds = {}
 
     basex = movementInfo['basex']
     baseShift = IMAGES['base'].get_width() - IMAGES['background'].get_width()
@@ -229,21 +230,24 @@ def mainGame(movementInfo):
         {'x': SCREENWIDTH + 200, 'y': newPipe1[1]['y']},
         {'x': SCREENWIDTH + 200 + (SCREENWIDTH / 2), 'y': newPipe2[1]['y']},
     ]
-    ballx = lowerPipes[0]['x'] + IMAGES['pipe'][0].get_width() / 4
-    bally = (lowerPipes[0]['y'] - PIPEGAPSIZE / 2) - IMAGES['ball'].get_height() / 4
     pipeVelX = -4
 
     # player velocity, max velocity, downward accleration, accleration on flap
-    playerVelY    =  -9   # player's velocity along Y, default same as playerFlapped
-    playerMaxVelY =  10   # max vel along Y, max descend speed
-    playerMinVelY =  -8   # min vel along Y, max ascend speed
-    playerAccY    =   1   # players downward accleration
-    playerRot     =  45   # player's rotation
-    playerVelRot  =   3   # angular speed
-    playerRotThr  =  20   # rotation threshold
-    playerFlapAcc =  -9   # players speed on flapping
-    playerFlapped = False # True when player flaps
+    initVelY    =  -9   # player's velocity along Y, default same as playerFlapped
+    initMaxVelY =  10   # max vel along Y, max descend speed
+    initMinVelY =  -8   # min vel along Y, max ascend speed
+    initAccY    =   1   # players downward accleration
+    initRot     =  45   # player's rotation
+    initVelRot  =   3   # angular speed
+    initRotThr  =  20   # rotation threshold
+    initFlapAcc =  -9   # players speed on flapping
+    birdFlapped = False # True when player flaps
     printIterator = 0
+    crashedBirds = 0    # Number of birds crashed so far
+    for i in range(NUMBERBIRDS):
+        print(i)
+        yplus = random.randint(30,90)
+        birds["Bird " + str(i)] = Bird(initx, inity + yplus, birdIndex, "Bird "+str(i), 0, 0, initVelY, initMaxVelY,initMinVelY,initAccY,initRot,initVelRot,initRotThr,initFlapAcc,birdFlapped)
 
     while True:
         for event in pygame.event.get():
@@ -251,83 +255,115 @@ def mainGame(movementInfo):
                 pygame.quit()
                 sys.exit()
             if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
-                if playery > -2 * IMAGES['player'][0].get_height():
-                    playerVelY = playerFlapAcc
-                    playerFlapped = True
-                    SOUNDS['wing'].play()
+                for bird in birds:
+                    bird = birds[bird]
+                    if bird.y > -2 * IMAGES[bird.key][0].get_height():
+                        bird.velY = bird.flapAcc
+                        bird.flapped = True
+                        SOUNDS['wing'].play()
             if event.type == KEYDOWN and (event.key == K_p):
                 pause()
 
         # check for crash here
-        crashTest = checkCrash({'x': playerx, 'y': playery, 'index': playerIndex},upperPipes, lowerPipes)#, {'x': ballx,'y':bally})
+        flag = True
+        for bird in birds:
+            bird = birds[bird]
+            if bird.moving:
+                crashTest = checkCrash(bird,upperPipes, lowerPipes)
+                flag = flag and crashTest[0]
 
-        if crashTest[0]:
-            return {
-                'y': playery,
-                'groundCrash': crashTest[1],
-                'basex': basex,
-                'upperPipes': upperPipes,
-                'lowerPipes': lowerPipes,
-                'score': score,
-                'playerVelY': playerVelY,
-                'playerRot': playerRot
-            }
+            if crashTest[0]:
+                print(bird.key, "tuned off")
+                bird.moving = False
+                crashedBirds += 1
+                # return {
+                #     'y': playery,
+                #     'groundCrash': crashTest[1],
+                #     'basex': basex,
+                #     'upperPipes': upperPipes,
+                #     'lowerPipes': lowerPipes,
+                #     'score': score,
+                #     'VelY': playerVelY,
+                #     'playerRot': playerRot
+                # }
 
         # neural_out
-        neural_input_x = playerx - lowerPipes[0]['x'] - 50
-        neural_input_y = playery - lowerPipes[0]['y'] - 50
+        #neural_input_x = playerx - lowerPipes[0]['x'] - 50
+        #neural_input_y = playery - lowerPipes[0]['y'] - 50
 
         ####
 
-        neural_out = False
-        if playery > lowerPipes[0]['y'] - 50:
-            playerVelY = playerFlapAcc
-            playerFlapped = True
-            SOUNDS['wing'].play()
+        # neural_out = False
+        # if playery > lowerPipes[0]['y'] - 50:
+        #     playerVelY = playerFlapAcc
+        #     playerFlapped = True
+        #     SOUNDS['wing'].play()
+        for bird in birds:
+            bird = birds[bird]
+            birdMidPos = bird.x + IMAGES[bird.key][0].get_width() / 2
 
-        playerMidPos = playerx + IMAGES['player'][0].get_width() / 2
-        for pipe in upperPipes:
-            pipeMidPos = pipe['x'] + IMAGES['pipe'][0].get_width() / 2
-            if pipeMidPos <= playerMidPos < pipeMidPos + 4:
-                score += 1
-                SOUNDS['point'].play()
+            if bird.y - random.randint(15,55) > lowerPipes[0]['y'] - 50 and bird.moving:
+                bird.velY = bird.flapAcc
+                bird.flapped = True
+                SOUNDS['wing'].play()
 
+            if not bird.moving:
+                bird.x += pipeVelX
+
+            for pipe in upperPipes:
+                pipeMidPos = pipe['x'] + IMAGES['pipe'][0].get_width() / 2
+                if pipeMidPos <= birdMidPos < pipeMidPos + 4:
+                    score += 1
+                    SOUNDS['point'].play()
+ 
+
+
+            # rotate the player
+            #if playerRot > -90:
+            #    playerRot -= playerVelRot
+
+
+
+            # player's movement
+            # if playerVelY < playerMaxVelY and not playerFlapped:
+            #     playerVelY += playerAccY
+            # if playerFlapped:
+            #     playerFlapped = False
+            if bird.moving:
+                if bird.rot > -90:
+                    bird.rot -= bird.velRot
+                if bird.velY < bird.maxVelY and not bird.flapped:
+                    bird.velY += bird.accY
+                if bird.flapped:
+                    bird.flapped = False
+
+                # more rotation to cover the threshold (calculated in visible rotation)
+                #playerRot = 45
+                #bird.rot = 45
+
+                bird.height = IMAGES[bird.key][bird.index].get_height()
+                bird.y += min(bird.velY, BASEY - bird.y - bird.height)
         # playerIndex basex change
         if (loopIter + 1) % 3 == 0:
-            playerIndex = next(playerIndexGen)
+            bird.index = next(playerIndexGen)
         loopIter = (loopIter + 1) % 30
         basex = -((-basex + 100) % baseShift)
-
-        # rotate the player
-        if playerRot > -90:
-            playerRot -= playerVelRot
-
-        # player's movement
-        if playerVelY < playerMaxVelY and not playerFlapped:
-            playerVelY += playerAccY
-        if playerFlapped:
-            playerFlapped = False
-
-            # more rotation to cover the threshold (calculated in visible rotation)
-            playerRot = 45
-
-        playerHeight = IMAGES['player'][playerIndex].get_height()
-        playery += min(playerVelY, BASEY - playery - playerHeight)
-
 
         # move pipes to left
         for uPipe, lPipe in zip(upperPipes, lowerPipes):
             uPipe['x'] += pipeVelX
             lPipe['x'] += pipeVelX
-        if printIterator % 30 == 0:
-            inputx = upperPipes[0]['x'] - playerx
-            inputy = (upperPipes[0]['y'] - lowerPipes[0]['y']) - playery
-            print("Player (x, y) - (", playerx, ",",playery,")")
-            print('l', lowerPipes[0]['y'])
-            print('u', upperPipes[0]['y'])
-            print("Input x", inputx)
-            print("Input y", inputy)
-        printIterator += 1
+        # if printIterator % 30 == 0:
+        #     bird = birds["Bird 0"]
+        #     print(bird.key)
+        #     inputx = upperPipes[0]['x'] - bird.x
+        #     inputy = (upperPipes[0]['y'] - lowerPipes[0]['y']) - bird.y
+        #     print("Player (x, y) - (", bird.x, ",",bird.y,")")
+        #     print('l', lowerPipes[0]['y'])
+        #     print('u', upperPipes[0]['y'])
+        #     print("Input x", inputx)
+        #     print("Input y", inputy)
+        # printIterator += 1
 
         # add new pipe when first pipe is about to touch left of screen
         if 0 < upperPipes[0]['x'] < 5:
@@ -348,19 +384,18 @@ def mainGame(movementInfo):
             SCREEN.blit(IMAGES['pipe'][1], (lPipe['x'], lPipe['y']))
 
         SCREEN.blit(IMAGES['base'], (basex, BASEY))
-        ballx = lowerPipes[0]['x'] + IMAGES['pipe'][0].get_width() / 4
-        bally = (lowerPipes[0]['y'] - PIPEGAPSIZE / 2) - IMAGES['ball'].get_height() / 4
-        SCREEN.blit(IMAGES['ball'], (ballx, bally))
         # print score so player overlaps the score
         showScore(score)
 
+        for bird in birds:
+            bird = birds[bird]
         # Player rotation has a threshold
-        visibleRot = playerRotThr
-        if playerRot <= playerRotThr:
-            visibleRot = playerRot
+            visibleRot = bird.rotThr
+            if bird.rot <= bird.rotThr:
+                visibleRot = bird.rot
         
-        playerSurface = pygame.transform.rotate(IMAGES['player'][playerIndex], visibleRot)
-        SCREEN.blit(playerSurface, (playerx, playery))
+            playerSurface = pygame.transform.rotate(IMAGES[bird.key][bird.index], visibleRot)
+            SCREEN.blit(playerSurface, (bird.x, bird.y))
 
         if DISPLAYSCREEN:
             pygame.display.update()
@@ -440,8 +475,11 @@ def playerShm(playerShm):
 def getRandomPipe():
     """returns a randomly generated pipe"""
     # y of gap between upper and lower pipe
-    gapY = random.randrange(0, int(BASEY * 0.6 - PIPEGAPSIZE))
-    gapY += int(BASEY * 0.2)
+    if not PIPEDETERMINTISIC:
+        gapY = random.randrange(0, int(BASEY * 0.6 - PIPEGAPSIZE))
+        gapY += int(BASEY * 0.2)
+    else:
+        gapY = int(BASEY * 0.2) + 50
     pipeHeight = IMAGES['pipe'][0].get_height()
     pipeX = SCREENWIDTH + 10
 
@@ -466,19 +504,20 @@ def showScore(score):
         Xoffset += IMAGES['numbers'][digit].get_width()
 
 
-def checkCrash(player, upperPipes, lowerPipes):
+def checkCrash(bird, upperPipes, lowerPipes):
     """returns True if player collders with base or pipes."""
-    pi = player['index']
-    player['w'] = IMAGES['player'][0].get_width()
-    player['h'] = IMAGES['player'][0].get_height()
+    bi = bird.index
+    print(bird.key)
+    bird.width = IMAGES[bird.key][0].get_width()
+    bird.height = IMAGES[bird.key][0].get_height()
 
     # if player crashes into ground
-    if player['y'] + player['h'] >= BASEY - 1:
+    if bird.y + bird.height >= BASEY - 1:
         return [True, True]
     else:
 
-        playerRect = pygame.Rect(player['x'], player['y'],
-                      player['w'], player['h'])
+        birdRect = pygame.Rect(bird.x, bird.y,
+                      bird.width, bird.height)
 
         pipeW = IMAGES['pipe'][0].get_width()
         pipeH = IMAGES['pipe'][0].get_height()
@@ -489,15 +528,16 @@ def checkCrash(player, upperPipes, lowerPipes):
             lPipeRect = pygame.Rect(lPipe['x'], lPipe['y'], pipeW, pipeH)
 
             # player and upper/lower pipe hitmasks
-            pHitMask = HITMASKS['player'][pi]
+            pHitMask = HITMASKS[bird.key][bi]
             uHitmask = HITMASKS['pipe'][0]
             lHitmask = HITMASKS['pipe'][1]
 
             # if bird collided with upipe or lpipe
-            uCollide = pixelCollision(playerRect, uPipeRect, pHitMask, uHitmask)
-            lCollide = pixelCollision(playerRect, lPipeRect, pHitMask, lHitmask)
+            uCollide = pixelCollision(birdRect, uPipeRect, pHitMask, uHitmask)
+            lCollide = pixelCollision(birdRect, lPipeRect, pHitMask, lHitmask)
 
             if uCollide or lCollide:
+                print("COLLIDE")
                 return [True, False]
 
     return [False, False]
@@ -518,6 +558,10 @@ def pixelCollision(rect1, rect2, hitmask1, hitmask2):
                 return True
     return False
 
+def generateBirds(birds):
+    return
+
+
 def getHitmask(image):
     """returns a hitmask using an image's alpha."""
     mask = []
@@ -526,6 +570,26 @@ def getHitmask(image):
         for y in xrange(image.get_height()):
             mask[x].append(bool(image.get_at((x,y))[3]))
     return mask
+
+class Bird:
+    def __init__(self,initx, inity, index, key, width, height, initVelY, initMaxVelY,initMinVelY,initAccY,initRot,initVelRot,initRotThr,initFlapAcc,birdFlapped):
+        self.x              = initx
+        self.y              = inity
+        self.key            = key
+        self.index          = index
+        self.width          = width
+        self.height         = height
+        self.moving         = True
+        self.velY           = initVelY
+        self.maxVelY        = initMaxVelY
+        self.minVelY        = initMinVelY
+        self.accY           = initAccY
+        self.rot            = initRot
+        self.velRot         = initVelRot
+        self.rotThr         = initRotThr
+        self.flapAcc        = initFlapAcc
+        self.flapped        = birdFlapped
+
 
 if __name__ == '__main__':
     main()
