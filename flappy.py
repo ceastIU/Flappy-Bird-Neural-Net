@@ -4,7 +4,7 @@ import sys
 
 import pygame
 from pygame.locals import *
-
+import math
 # For input lines 275
 
 FPS = 30
@@ -15,7 +15,8 @@ PIPEGAPSIZE  = 150 # gap between upper and lower part of pipe
 BASEY        = SCREENHEIGHT * 0.79
 PIPEDETERMINTISIC = True
 DISPLAYSCREEN = True
-DISPLAYWELCOME = False
+DISPLAYWELCOME = True
+GAMEOVERSCREEN = False
 NUMBERBIRDS = 2
 # image, sound and hitmask  dicts
 IMAGES, SOUNDS, HITMASKS = {}, {}, {}
@@ -168,11 +169,18 @@ def showWelcomeAnimation():
     playerShmVals = {'val': 2, 'dir': 1}
 
     while True:
+        if DISPLAYSCREEN:
+            SOUNDS['wing'].play()
+            return {
+                'playery': playery + playerShmVals['val'],
+                'basex': 80,
+                'playerIndexGen': playerIndexGen,
+            }
         for event in pygame.event.get():
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 pygame.quit()
                 sys.exit()
-            if (event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP)) or DISPLAYWELCOME:
+            if (event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP)):
                 # make first flap sound and return values for mainGame
                 SOUNDS['wing'].play()
                 return {
@@ -264,28 +272,6 @@ def mainGame(movementInfo):
             if event.type == KEYDOWN and (event.key == K_p):
                 pause()
 
-        # check for crash here
-        flag = True
-        for bird in birds:
-            bird = birds[bird]
-            if bird.moving:
-                crashTest = checkCrash(bird,upperPipes, lowerPipes)
-                flag = flag and crashTest[0]
-
-            if crashTest[0]:
-                print(bird.key, "tuned off")
-                bird.moving = False
-                crashedBirds += 1
-                # return {
-                #     'y': playery,
-                #     'groundCrash': crashTest[1],
-                #     'basex': basex,
-                #     'upperPipes': upperPipes,
-                #     'lowerPipes': lowerPipes,
-                #     'score': score,
-                #     'VelY': playerVelY,
-                #     'playerRot': playerRot
-                # }
 
         # neural_out
         #neural_input_x = playerx - lowerPipes[0]['x'] - 50
@@ -298,8 +284,30 @@ def mainGame(movementInfo):
         #     playerVelY = playerFlapAcc
         #     playerFlapped = True
         #     SOUNDS['wing'].play()
+        bird_passed = False
         for bird in birds:
             bird = birds[bird]
+            if bird.moving:
+                crashTest = checkCrash(bird, upperPipes, lowerPipes)
+
+            if crashTest[0] and bird.moving:
+                print(bird.key, "tuned off")
+                bird.moving = False
+                bird.distFromOpen = abs((lowerPipes[0]['y'] - PIPEGAPSIZE / 2) - bird.y)
+                crashedBirds += 1
+
+            if crashedBirds == NUMBERBIRDS:
+                return {
+                    'y': birds["Bird 0"].y,
+                    'groundCrash': crashTest[1],
+                    'basex': basex,
+                    'upperPipes': upperPipes,
+                    'lowerPipes': lowerPipes,
+                    'score': score,
+                    'VelY': birds["Bird 0"].velY,
+                    'Rot': birds["Bird 0"].rot
+                }
+
             birdMidPos = bird.x + IMAGES[bird.key][0].get_width() / 2
 
             if bird.y - random.randint(15,55) > lowerPipes[0]['y'] - 50 and bird.moving:
@@ -309,26 +317,19 @@ def mainGame(movementInfo):
 
             if not bird.moving:
                 bird.x += pipeVelX
+            else:
+                bird.distTraveled -= pipeVelX
+            print(bird.key, " dist ", bird.distTraveled)
 
             for pipe in upperPipes:
                 pipeMidPos = pipe['x'] + IMAGES['pipe'][0].get_width() / 2
                 if pipeMidPos <= birdMidPos < pipeMidPos + 4:
-                    score += 1
-                    SOUNDS['point'].play()
- 
+                    if not bird_passed:
+                        score += 1
+                        bird_passed = True
+                        SOUNDS['point'].play()
+                    bird.score += 1
 
-
-            # rotate the player
-            #if playerRot > -90:
-            #    playerRot -= playerVelRot
-
-
-
-            # player's movement
-            # if playerVelY < playerMaxVelY and not playerFlapped:
-            #     playerVelY += playerAccY
-            # if playerFlapped:
-            #     playerFlapped = False
             if bird.moving:
                 if bird.rot > -90:
                     bird.rot -= bird.velRot
@@ -336,6 +337,7 @@ def mainGame(movementInfo):
                     bird.velY += bird.accY
                 if bird.flapped:
                     bird.flapped = False
+                    bird.rot = 45
 
                 # more rotation to cover the threshold (calculated in visible rotation)
                 #playerRot = 45
@@ -407,10 +409,10 @@ def showGameOverScreen(crashInfo):
     score = crashInfo['score']
     playerx = SCREENWIDTH * 0.2
     playery = crashInfo['y']
-    playerHeight = IMAGES['player'][0].get_height()
-    playerVelY = crashInfo['playerVelY']
+    playerHeight = IMAGES['Bird 0'][0].get_height()
+    playerVelY = crashInfo['VelY']
     playerAccY = 2
-    playerRot = crashInfo['playerRot']
+    playerRot = crashInfo['Rot']
     playerVelRot = 7
 
     basex = crashInfo['basex']
@@ -423,14 +425,16 @@ def showGameOverScreen(crashInfo):
         SOUNDS['die'].play()
 
     while True:
+        print("in")
+        if not GAMEOVERSCREEN:
+            return
         for event in pygame.event.get():
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 pygame.quit()
                 sys.exit()
-            if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
-                if playery + playerHeight >= BASEY - 1:
-                    return
-
+            if (event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP)) or True:
+                print("Should be working")
+                return
         # player y shift
         if playery + playerHeight < BASEY - 1:
             playery += min(playerVelY, BASEY - playery - playerHeight)
@@ -454,7 +458,7 @@ def showGameOverScreen(crashInfo):
         SCREEN.blit(IMAGES['base'], (basex, BASEY))
         showScore(score)
 
-        playerSurface = pygame.transform.rotate(IMAGES['player'][1], playerRot)
+        playerSurface = pygame.transform.rotate(IMAGES['Bird 0'][1], playerRot)
         SCREEN.blit(playerSurface, (playerx,playery))
 
         FPSCLOCK.tick(FPS)
@@ -572,7 +576,7 @@ def getHitmask(image):
     return mask
 
 class Bird:
-    def __init__(self,initx, inity, index, key, width, height, initVelY, initMaxVelY,initMinVelY,initAccY,initRot,initVelRot,initRotThr,initFlapAcc,birdFlapped):
+    def __init__(self,initx, inity, index, key, width, height, initVelY, initMaxVelY, initMinVelY,initAccY,initRot,initVelRot,initRotThr,initFlapAcc,birdFlapped,score=0):
         self.x              = initx
         self.y              = inity
         self.key            = key
@@ -589,6 +593,9 @@ class Bird:
         self.rotThr         = initRotThr
         self.flapAcc        = initFlapAcc
         self.flapped        = birdFlapped
+        self.score          = score
+        self.distTraveled   = 0
+        self.distFromOpen   = 0
 
 
 if __name__ == '__main__':
