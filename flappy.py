@@ -11,13 +11,13 @@ FPS = 30
 SCREENWIDTH  = 288
 SCREENHEIGHT = 512
 # amount by which base can maximum shift to left
-PIPEGAPSIZE  = 150 # gap between upper and lower part of pipe
+PIPEGAPSIZE  = 125 # gap between upper and lower part of pipe
 BASEY        = SCREENHEIGHT * 0.79
-PIPEDETERMINTISIC = True
+PIPEDETERMINTISIC = False
 DISPLAYSCREEN = True
 DISPLAYWELCOME = True
 GAMEOVERSCREEN = False
-NUMBERBIRDS = 5
+NUMBERBIRDS = 8
 FIRST = True
 # image, sound and hitmask  dicts
 IMAGES, SOUNDS, HITMASKS = {}, {}, {}
@@ -582,18 +582,35 @@ def generateBirds(birds, fitness,  FIRST, initx, inity, birdIndex, initVelY,init
     else:
         print("New Gene")
         newGeneration = {}
-        winners = fitness[0:4]
-        print(winners)
+        winners = fitness[-4:]
+        winners = winners[::-1]
+        print(' Winners', winners)
         first = birds[winners[0][0]]
+        print("First: ", first.key, first.genetic, first.index)
         second = birds[winners[1][0]]
         third = birds[winners[2][0]]
         fourth = birds[winners[3][0]]
-        newGeneration['Bird 0'] = first
-        first.key = 'Bird 0'
-        newGeneration['Bird 1'] = second
-        newGeneration['Bird 2'] = third
-        newGeneration['Bird 4'] = fourth
-        newGeneration['Bird 5'] = Bird(initx, inity, birdIndex, "Bird " + str(5), initVelY, initAccY, initRot, crossOver(first,second))
+        selection = [first, second, third, fourth]
+        newGeneration['Bird 0'] = Bird(initx, inity, first.index, "Bird " + str(0), initVelY, initAccY,
+                                       initRot, first.genetic)
+        newGeneration['Bird 1'] = Bird(initx, inity, second.index, "Bird " + str(1), initVelY, initAccY,
+                                       initRot, second.genetic)
+        newGeneration['Bird 2'] = Bird(initx, inity, third.index, "Bird " + str(2), initVelY, initAccY,
+                                       initRot, third.genetic)
+        newGeneration['Bird 3'] = Bird(initx, inity, fourth.index, "Bird " + str(3), initVelY, initAccY,
+                                       initRot, third.genetic)
+        newGeneration['Bird 4'] = Bird(initx, inity, first.index, "Bird " + str(4), initVelY, initAccY,
+                                       initRot, crossOver(first, second))
+        newGeneration['Bird 5'] = Bird(initx, inity, second.index, "Bird " + str(5), initVelY, initAccY,
+                                       initRot, crossOver(third, fourth))
+        birdOne = random.choice(selection)
+        birdTwo = random.choice(selection)
+        newGeneration['Bird 6'] = Bird(initx, inity, third.index, "Bird " + str(6), initVelY, initAccY,
+                                       initRot, crossOver(birdOne, birdTwo))
+        birdOne = random.choice(list(birds.values()))
+        birdTwo = random.choice(list(birds.values()))
+        newGeneration['Bird 7'] = Bird(initx, inity, fourth.index, "Bird " + str(7), initVelY, initAccY,
+                                       initRot, crossOver(birdOne, birdTwo))
         birds = newGeneration
         print(newGeneration.keys() )
     for bird in birds:
@@ -607,17 +624,20 @@ def crossOver(bird1, bird2):
 def rankBirdsFitness(birds):
     fitness = []
     for bird in birds:
+        print(fitness)
         bird = birds[bird]
+        print(bird.key)
         if len(fitness) == 0:
-            fitness.append((bird.key, bird.calculate_fitness()))
+            print("---once----")
+            fitness.append((bird.key, bird.calculate_fitness(), bird))
         else:
             inserted = False
-            birdFitness = (bird.key, bird.calculate_fitness())
+            birdFitness = (bird.key, bird.calculate_fitness(), bird)
             for i in range(len(fitness)):
-                if fitness[i][1] < birdFitness[1]:
+                if fitness[i][1] > birdFitness[1]:
                     fitness.insert(i, birdFitness)
                     inserted = True
-                print(fitness)
+                    break
             if not inserted:
                 fitness.append(birdFitness)
     return fitness
