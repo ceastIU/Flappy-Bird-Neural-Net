@@ -11,7 +11,7 @@ FPS = 30
 SCREENWIDTH  = 288
 SCREENHEIGHT = 512
 # amount by which base can maximum shift to left
-PIPEGAPSIZE  = 125 # gap between upper and lower part of pipe
+PIPEGAPSIZE  = 120 # gap between upper and lower part of pipe
 BASEY        = SCREENHEIGHT * 0.79
 PIPEDETERMINTISIC = False
 DISPLAYSCREEN = True
