@@ -583,17 +583,21 @@ def generateBirds(birds, fitness,  FIRST, initx, inity, birdIndex, initVelY,init
         print("New Gene")
         newGeneration = {}
         winners = fitness[0:4]
+        print(winners)
         first = birds[winners[0][0]]
         second = birds[winners[1][0]]
         third = birds[winners[2][0]]
-        fourth = birds[winners[1][0]]
+        fourth = birds[winners[3][0]]
         newGeneration['Bird 0'] = first
+        first.key = 'Bird 0'
         newGeneration['Bird 1'] = second
         newGeneration['Bird 2'] = third
         newGeneration['Bird 4'] = fourth
-        newGeneration["Bird 5"] = Bird(initx, inity, birdIndex, "Bird " + str(5), initVelY, initAccY, initRot, crossOver(first,second))
+        newGeneration['Bird 5'] = Bird(initx, inity, birdIndex, "Bird " + str(5), initVelY, initAccY, initRot, crossOver(first,second))
         birds = newGeneration
-    print("Birds generate birds", birds )
+        print(newGeneration.keys() )
+    for bird in birds:
+        print("Bird generate birds", birds[bird].key)
     return birds
 
 def crossOver(bird1, bird2):
@@ -613,6 +617,7 @@ def rankBirdsFitness(birds):
                 if fitness[i][1] < birdFitness[1]:
                     fitness.insert(i, birdFitness)
                     inserted = True
+                print(fitness)
             if not inserted:
                 fitness.append(birdFitness)
     return fitness
