@@ -6,6 +6,7 @@ import pygame
 from pygame.locals import *
 import math
 # For input lines 275
+from bird import Bird
 
 FPS = 30
 SCREENWIDTH  = 288
@@ -13,12 +14,16 @@ SCREENHEIGHT = 512
 # amount by which base can maximum shift to left
 PIPEGAPSIZE  = 120 # gap between upper and lower part of pipe
 BASEY        = SCREENHEIGHT * 0.79
-PIPEDETERMINTISIC = False
+PIPEDETERMINTISIC = True
 DISPLAYSCREEN = True
 DISPLAYWELCOME = True
 GAMEOVERSCREEN = False
 NUMBERBIRDS = 8
 FIRST = True
+
+HIGHSCORE = 0
+GENERATION = 0
+
 # image, sound and hitmask  dicts
 IMAGES, SOUNDS, HITMASKS = {}, {}, {}
 
@@ -85,7 +90,10 @@ def main():
         pygame.image.load('assets/sprites/8.png').convert_alpha(),
         pygame.image.load('assets/sprites/9.png').convert_alpha()
     )
-    IMAGES['ball'] = pygame.image.load('assets/sprites/ball.png').convert_alpha()
+    IMAGES['generation'] = pygame.image.load('assets/sprites/gene3.png').convert_alpha()
+    IMAGES['high'] = pygame.image.load('assets/sprites/high.png').convert_alpha()
+    IMAGES['high'] = pygame.transform.scale(IMAGES['high'], (165, 40))
+    IMAGES['generation'] = pygame.transform.scale(IMAGES['generation'], (160, 37))
 
     # game over sprite
     IMAGES['gameover'] = pygame.image.load('assets/sprites/gameover.png').convert_alpha()
@@ -106,6 +114,8 @@ def main():
     SOUNDS['swoosh'] = pygame.mixer.Sound('assets/audio/swoosh' + soundExt)
     SOUNDS['wing']   = pygame.mixer.Sound('assets/audio/wing' + soundExt)
     birds = {}
+    highscore = 0
+    generation = 0
     while True:
         # select random background sprites
         randBg = random.randint(0, len(BACKGROUNDS_LIST) - 1)
@@ -140,10 +150,12 @@ def main():
                 getHitmask(IMAGES['Bird '+str(i)][1]),
                 getHitmask(IMAGES['Bird '+str(i)][2]),
             )
+
         movementInfo = showWelcomeAnimation()
-        birds_m = mainGame(movementInfo, birds)
+        birds_m, highscore = mainGame(movementInfo, birds, highscore, generation)
         birds = showGameOverScreen(birds_m)
-        print("Birds main: ", birds)
+        generation += 1
+
 
 
 def showWelcomeAnimation():
@@ -214,7 +226,7 @@ def pause():
             if event.type == KEYDOWN and (event.key == K_p):
                 PAUSE = False
 
-def mainGame(movementInfo, birds):
+def mainGame(movementInfo, birds, highscore, generation):
     score = birdIndex = loopIter = 0
     playerIndexGen = movementInfo['playerIndexGen']
     initx, inity = int(SCREENWIDTH * 0.2), movementInfo['playery']
@@ -254,12 +266,6 @@ def mainGame(movementInfo, birds):
     print("NUMBER birds = ", len(birds))
     if len(birds) == 0:
         birds = generateBirds({}, {}, FIRST, initx, inity, birdIndex, initVelY,initAccY,initRot)
-    # for i in range(NUMBERBIRDS):
-    #     genetic = random.randint(0, 100)
-    #     print(i)
-    #     yplus = random.randint(30,90)
-    #     birds["Bird " + str(i)] = Bird(initx, inity + yplus, birdIndex, "Bird "+str(i), initVelY,initAccY,initRot,birdFlapped, genetic)
-    # #FIRST = False
     while True:
         for event in pygame.event.get():
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
@@ -275,24 +281,11 @@ def mainGame(movementInfo, birds):
             if event.type == KEYDOWN and (event.key == K_p):
                 pause()
 
-
-        # neural_out
-        #neural_input_x = playerx - lowerPipes[0]['x'] - 50
-        #neural_input_y = playery - lowerPipes[0]['y'] - 50
-
-        ####
-
-        # neural_out = False
-        # if playery > lowerPipes[0]['y'] - 50:
-        #     playerVelY = playerFlapAcc
-        #     playerFlapped = True
-        #     SOUNDS['wing'].play()
         bird_passed = False
         for bird in birds:
             bird = birds[bird]
             if bird.moving:
                 crashTest = checkCrash(bird, upperPipes, lowerPipes)
-
             if crashTest[0] and bird.moving:
                 print(bird.key, "tuned off")
                 bird.moving = False
@@ -303,7 +296,7 @@ def mainGame(movementInfo, birds):
                 fitness = rankBirdsFitness(birds)
                 birds = generateBirds(birds, fitness, False, initx, inity, birdIndex, initVelY, initAccY,initRot)
                 print("Birds: ", birds)
-                return birds
+                return birds, highscore
                 # return {
                 #     'y': birds["Bird 0"].y,
                 #     'groundCrash': crashTest[1],
@@ -321,8 +314,12 @@ def mainGame(movementInfo, birds):
                 neural_input_x = lowerPipes[1]['x'] - (IMAGES['pipe'][1].get_width() /4) - bird.x
             neural_input_y = (lowerPipes[0]['y'] - PIPEGAPSIZE / 2) - bird.y
 
+            if bird.key == "Bird 0":
+                print("Bird x,y: ", neural_input_x, " : ", neural_input_y)
+
+
             #if bird.y - random.randint(15,55) > lowerPipes[0]['y'] - 50 and bird.moving:
-            if bird.flaps(neural_input_x, neural_input_y):
+            if bird.flaps(neural_input_x, neural_input_y) and bird.y > -2 * IMAGES[bird.key][0].get_height():
                 bird.velY = bird.flapAcc
                 bird.flapped = True
                 SOUNDS['wing'].play()
@@ -340,7 +337,8 @@ def mainGame(movementInfo, birds):
                         bird_passed = True
                         SOUNDS['point'].play()
                     bird.score += 1
-
+            if score > highscore:
+                highscore = score
             if bird.moving:
                 if bird.rot > -90:
                     bird.rot -= bird.velRot
@@ -368,17 +366,6 @@ def mainGame(movementInfo, birds):
         for uPipe, lPipe in zip(upperPipes, lowerPipes):
             uPipe['x'] += pipeVelX
             lPipe['x'] += pipeVelX
-        # if printIterator % 30 == 0:
-        #     bird = birds["Bird 0"]
-        #     print(bird.key)
-        #     inputx = upperPipes[0]['x'] - bird.x
-        #     inputy = (upperPipes[0]['y'] - lowerPipes[0]['y']) - bird.y
-        #     print("Player (x, y) - (", bird.x, ",",bird.y,")")
-        #     print('l', lowerPipes[0]['y'])
-        #     print('u', upperPipes[0]['y'])
-        #     print("Input x", inputx)
-        #     print("Input y", inputy)
-        # printIterator += 1
 
         # add new pipe when first pipe is about to touch left of screen
         if 0 < upperPipes[0]['x'] < 5:
@@ -401,6 +388,7 @@ def mainGame(movementInfo, birds):
         SCREEN.blit(IMAGES['base'], (basex, BASEY))
         # print score so player overlaps the score
         showScore(score)
+        showInfo(highscore, generation)
 
         for bird in birds:
             bird = birds[bird]
@@ -503,6 +491,28 @@ def getRandomPipe():
         {'x': pipeX, 'y': gapY + PIPEGAPSIZE}, # lower pipe
     ]
 
+def showInfo(highscore, generation):
+    highDigits = [int(x) for x in list(str(highscore))]
+    highWidth = 0  # total width of all numbers to be printed
+    geneDigits = [int(x) for x in list(str(generation))]
+    geneWidth = 0  # total width of all numbers to be printed
+    for digit in highDigits:
+        highWidth += IMAGES['numbers'][digit].get_width()
+    for digit in geneDigits:
+        geneWidth += IMAGES['numbers'][digit].get_width()
+
+    Xoffset = 5
+    SCREEN.blit(IMAGES['high'], (Xoffset, SCREENHEIGHT * .840))
+    SCREEN.blit(IMAGES['generation'], (Xoffset, SCREENHEIGHT * .917))
+    XoffsetHigh = (SCREENWIDTH - highWidth) / 4 * 3 + 15
+    for digit in highDigits:
+        SCREEN.blit(IMAGES['numbers'][digit], (XoffsetHigh, SCREENHEIGHT * .840))
+        XoffsetHigh += IMAGES['numbers'][digit].get_width()
+    XoffsetGene = (SCREENWIDTH - geneWidth) / 4 * 3 + 15
+    for digit in geneDigits:
+        SCREEN.blit(IMAGES['numbers'][digit], (XoffsetGene, SCREENHEIGHT * .917))
+        XoffsetGene += IMAGES['numbers'][digit].get_width()
+
 
 def showScore(score):
     """displays score in center of screen"""
@@ -572,7 +582,7 @@ def pixelCollision(rect1, rect2, hitmask1, hitmask2):
                 return True
     return False
 
-def generateBirds(birds, fitness,  FIRST, initx, inity, birdIndex, initVelY,initAccY,initRot ):
+def generateBirds(birds, fitness,  FIRST, initx, inity, birdIndex, initVelY,initAccY,initRot):
     if FIRST:
         for i in range(NUMBERBIRDS):
             genetic = random.randint(0, 100)
@@ -652,35 +662,7 @@ def getHitmask(image):
     return mask
 
 
-class Bird:
-    def __init__(self,initx, inity, index, key, initVelY,initAccY,initRot,genetic):
-        self.x              = initx
-        self.y              = inity
-        self.key            = key
-        self.index          = index
-        self.width          = 0
-        self.height         = 0
-        self.moving         = True
-        self.velY           = initVelY
-        self.maxVelY        = 10   # max vel along Y, max descend speed
-        self.minVelY        = -8   # min vel along Y, max ascend speed
-        self.accY           = initAccY
-        self.rot            = initRot
-        self.velRot         = 3   # angular speed
-        self.rotThr         = 20   # rotation threshold
-        self.flapAcc        = -9   # players speed on flapping
-        self.flapped        = True
-        self.score          = 0
-        self.distTraveled   = 0
-        self.distFromOpen   = 0
-        self.genetic        = genetic
 
-    def calculate_fitness(self):
-        return self.score + self.distTraveled - self.distFromOpen
-
-    def flaps(self, inputX, inputY):
-        return inputY + self.genetic < 0
-        #return random.random() > .9
 
 
 
