@@ -5,7 +5,7 @@ class Bird:
     def __init__(self,initx, inity, index, key, initVelY,initAccY,initRot,genetic):
         n_inputs = 2
         n_outputs = 1
-        height = (-190 + 260) / 2
+        height = 190
         distance = 142
         #
 

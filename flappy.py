@@ -313,7 +313,7 @@ def mainGame(movementInfo, birds, highscore, generation):
             if neural_input_x < 0:
                 neural_input_x = lowerPipes[1]['x'] - (IMAGES['pipe'][1].get_width() /4) - bird.x
             neural_input_y = (lowerPipes[0]['y'] - PIPEGAPSIZE / 2) - bird.y
-
+            print("!!!!",(lowerPipes[0]['y'] - PIPEGAPSIZE / 2))
             if bird.key == "Bird 0":
                 print("Bird x,y: ", neural_input_x, " : ", neural_input_y)
 
