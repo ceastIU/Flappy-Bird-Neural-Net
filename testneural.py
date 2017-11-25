@@ -1,32 +1,49 @@
 from math import exp
 from random import seed
 from random import random
+import random
+import numpy as np
 
 class Net:
-    def __init__(self, n_inputs,n_outputs,  height, distance, n_hidden = 5):
+    def __init__(self, n_inputs, n_outputs, weights, n_hidden=5):
+        self.height = 190
+        self.distance = 142
         self.inputs = n_inputs
         self.hidden = n_hidden
         self.outputs = n_outputs
         self.network = list()
+        self.weights = weights
+        self.bias = []
         self.init_net()
-        self.height = height
-        self.distance = distance
+
 
     # Initialize a network
     def init_net(self):
         self.network = list()
-        hidden_layer = [{'weights': [random() for i in range(self.inputs + 1)]} for i in range(self.hidden)]
+        #self.bias.append(random.randint(-5, 5))
+        self.bias.append(4.6)
+        #hidden_layer = [{'weights': np.random.rand(self.inputs)} for i in range(self.hidden)]
+        hidden_layer = [{'weights': np.array([-.5, -.5])} for i in range(self.hidden)]
+
+        #hidden_layer.append({'bias':random.randint(-5, 5)})
         self.network.append(hidden_layer)
-        output_layer = [{'weights': [random() for i in range(self.hidden + 1)]} for i in range(self.outputs)]
+        self.bias.append(2.0122036125)
+        output_layer = [{'weights': np.array([-.31342821235, -0.1139874, -0.59353849, -0.4720327, -.398302309])} for i in range(self.outputs)]
+        #output_layer = [{'weights': np.random.rand(self.hidden)} for i in range(self.outputs)]
         self.network.append(output_layer)
+        print(self.network)
+        print("Test", np.random.rand(self.inputs))
         #return network
 
     # Calculate neuron activation for an input
-    def activate(self, weights, inputs):
-        activation = weights[-1]
-        for i in range(len(weights) - 1):
+    def activate(self, weights, inputs, bias):
+        activation = 0
+        activation2 = weights.dot(inputs)
+        for i in range(len(weights)):
             activation += weights[i] * inputs[i]
-        return activation
+        return activation2 + bias
+
+    # The last value is used as a bias!!!!!
 
     # Transfer neuron activation
     def transfer(self, activation):
@@ -34,15 +51,19 @@ class Net:
 
     # Forward propagate input to a network output
     def propagate(self, inputs):
-        print(inputs)
-        inputs = (inputs[0]/self.distance, inputs[1]/self.height)
+        #print("Reg", inputs)
+        inputs = np.array([inputs[0]/self.distance, inputs[1]/self.height])
+        index = 0
         for layer in self.network:
             new_inputs = []
+            bias = self.bias[index]
+            index += 1
             for neuron in layer:
-                activation = self.activate(neuron['weights'], inputs)
+                activation = self.activate(neuron['weights'], inputs, bias)
                 neuron['output'] = self.transfer(activation)
                 new_inputs.append(neuron['output'])
             inputs = new_inputs
+        #print("in 2", inputs)
         return inputs
 
     def get_net(self):

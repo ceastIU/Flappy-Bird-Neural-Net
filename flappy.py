@@ -14,7 +14,7 @@ SCREENHEIGHT = 512
 # amount by which base can maximum shift to left
 PIPEGAPSIZE  = 120 # gap between upper and lower part of pipe
 BASEY        = SCREENHEIGHT * 0.79
-PIPEDETERMINTISIC = True
+PIPEDETERMINTISIC = False
 DISPLAYSCREEN = True
 DISPLAYWELCOME = True
 GAMEOVERSCREEN = False
@@ -239,14 +239,14 @@ def mainGame(movementInfo, birds, highscore, generation):
 
     # list of upper pipes
     upperPipes = [
-        {'x': SCREENWIDTH + 200, 'y': newPipe1[0]['y']},
-        {'x': SCREENWIDTH + 200 + (SCREENWIDTH / 2), 'y': newPipe2[0]['y']},
+        {'x': SCREENWIDTH/2 +50, 'y': newPipe1[0]['y']},
+        {'x': SCREENWIDTH/2 +50+ (SCREENWIDTH / 2), 'y': newPipe2[0]['y']},
     ]
 
     # list of lowerpipe
     lowerPipes = [
-        {'x': SCREENWIDTH + 200, 'y': newPipe1[1]['y']},
-        {'x': SCREENWIDTH + 200 + (SCREENWIDTH / 2), 'y': newPipe2[1]['y']},
+        {'x': SCREENWIDTH/2+50, 'y': newPipe1[1]['y']},
+        {'x': SCREENWIDTH/2+50 + (SCREENWIDTH / 2), 'y': newPipe2[1]['y']},
     ]
     pipeVelX = -4
 
@@ -313,7 +313,7 @@ def mainGame(movementInfo, birds, highscore, generation):
             if neural_input_x < 0:
                 neural_input_x = lowerPipes[1]['x'] - (IMAGES['pipe'][1].get_width() /4) - bird.x
             neural_input_y = (lowerPipes[0]['y'] - PIPEGAPSIZE / 2) - bird.y
-            print("!!!!",(lowerPipes[0]['y'] - PIPEGAPSIZE / 2))
+            #print("!!!!",(lowerPipes[0]['y'] - PIPEGAPSIZE / 2))
             if bird.key == "Bird 0":
                 print("Bird x,y: ", neural_input_x, " : ", neural_input_y)
 
@@ -562,7 +562,7 @@ def checkCrash(bird, upperPipes, lowerPipes):
 
             if uCollide or lCollide:
                 print("COLLIDE")
-                return [True, False]
+                return [False, False]
 
     return [False, False]
 

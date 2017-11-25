@@ -1,3 +1,5 @@
+import random
+
 from testneural import Net
 
 
@@ -5,10 +7,7 @@ class Bird:
     def __init__(self,initx, inity, index, key, initVelY,initAccY,initRot,genetic):
         n_inputs = 2
         n_outputs = 1
-        height = 190
-        distance = 142
         #
-
         self.x              = initx
         self.y              = inity
         self.key            = key
@@ -29,12 +28,14 @@ class Bird:
         self.distTraveled   = 0
         self.distFromOpen   = 0
         self.genetic        = genetic
-        self.network        = Net(n_inputs,n_outputs, height, distance)
+        self.network        = Net(n_inputs, n_outputs, genetic)
 
     def calculate_fitness(self):
         return self.score + self.distTraveled - self.distFromOpen
 
     def flaps(self, inputX, inputY):
         flaps = self.network.propagate((inputX, inputY))[0]
-        return flaps > 1.8
+        if self.key == "Bird 0":
+            print("Output ", flaps)
+        return flaps < .535
         #return random.random() > .9
