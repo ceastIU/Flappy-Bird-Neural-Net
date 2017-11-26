@@ -5,14 +5,14 @@ import random
 import numpy as np
 
 class Net:
-    def __init__(self, n_inputs, n_outputs, weights, n_hidden=5):
+    def __init__(self, n_inputs, n_outputs, n_hidden=5):
         self.height = 190
         self.distance = 142
         self.inputs = n_inputs
         self.hidden = n_hidden
         self.outputs = n_outputs
         self.network = list()
-        self.weights = weights
+        #self.weights = weights
         self.bias = []
         self.init_net()
 
@@ -20,20 +20,25 @@ class Net:
     # Initialize a network
     def init_net(self):
         self.network = list()
-        #self.bias.append(random.randint(-5, 5))
-        self.bias.append(4.6)
-        #hidden_layer = [{'weights': np.random.rand(self.inputs)} for i in range(self.hidden)]
-        hidden_layer = [{'weights': np.array([-.5, -.5])} for i in range(self.hidden)]
-
-        #hidden_layer.append({'bias':random.randint(-5, 5)})
+        self.bias.append(random.randint(-1, 1))
+        #self.bias.append(4.6)
+        #hidden_layer = [{'weights': np.array([-.5,-.5])} for i in range(self.hidden)]
+        hidden_layer = [{'weights': np.array(self.genWeights(self.inputs))} for i in range(self.hidden)]
+        #hidden_layer.append({'bias':random.randint(0, 5)})
         self.network.append(hidden_layer)
-        self.bias.append(2.0122036125)
-        output_layer = [{'weights': np.array([-.31342821235, -0.1139874, -0.59353849, -0.4720327, -.398302309])} for i in range(self.outputs)]
-        #output_layer = [{'weights': np.random.rand(self.hidden)} for i in range(self.outputs)]
+        self.bias.append(random.randint(-1, 1))
+        #self.bias.append(2.0122036125)
+        output_layer = [{'weights': self.genWeights(self.hidden)} for i in range(self.outputs)]
+        #output_layer = [{'weights': np.array([-.31342821235, -0.1139874, -0.59353849, -0.4720327, -.398302309])} for i in range(self.outputs)]
         self.network.append(output_layer)
-        print(self.network)
-        print("Test", np.random.rand(self.inputs))
+        print("!!! Net", self.network)
         #return network
+
+    def genWeights(self, n):
+        weights = []
+        for x in range(n):
+            weights.append(random.uniform(-1, 1))
+        return np.array(weights)
 
     # Calculate neuron activation for an input
     def activate(self, weights, inputs, bias):
@@ -43,15 +48,12 @@ class Net:
             activation += weights[i] * inputs[i]
         return activation2 + bias
 
-    # The last value is used as a bias!!!!!
-
     # Transfer neuron activation
     def transfer(self, activation):
         return 1.0 / (1.0 + exp(-activation))
 
     # Forward propagate input to a network output
     def propagate(self, inputs):
-        #print("Reg", inputs)
         inputs = np.array([inputs[0]/self.distance, inputs[1]/self.height])
         index = 0
         for layer in self.network:
@@ -68,6 +70,10 @@ class Net:
 
     def get_net(self):
         return self.network
+
+    # def __str__(self):
+    #     print(self.network)
+    #     return ":"
 # # Test training backprop algorithm
 # #seed(1)
 #

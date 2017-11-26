@@ -4,7 +4,7 @@ from testneural import Net
 
 
 class Bird:
-    def __init__(self,initx, inity, index, key, initVelY,initAccY,initRot,genetic):
+    def __init__(self,initx, inity, index, key, initVelY,initAccY,initRot,net=0):
         n_inputs = 2
         n_outputs = 1
         #
@@ -27,8 +27,10 @@ class Bird:
         self.score          = 0
         self.distTraveled   = 0
         self.distFromOpen   = 0
-        self.genetic        = genetic
-        self.network        = Net(n_inputs, n_outputs, genetic)
+        if net == 0:
+            self.network    = Net(n_inputs, n_outputs)
+        else:
+            self.network    = net
 
     def calculate_fitness(self):
         return self.score + self.distTraveled - self.distFromOpen
@@ -37,5 +39,5 @@ class Bird:
         flaps = self.network.propagate((inputX, inputY))[0]
         if self.key == "Bird 0":
             print("Output ", flaps)
-        return flaps < .535
+        return flaps > .50
         #return random.random() > .9

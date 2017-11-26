@@ -14,7 +14,7 @@ SCREENHEIGHT = 512
 # amount by which base can maximum shift to left
 PIPEGAPSIZE  = 120 # gap between upper and lower part of pipe
 BASEY        = SCREENHEIGHT * 0.79
-PIPEDETERMINTISIC = False
+PIPEDETERMINTISIC = True
 DISPLAYSCREEN = True
 DISPLAYWELCOME = True
 GAMEOVERSCREEN = False
@@ -292,9 +292,12 @@ def mainGame(movementInfo, birds, highscore, generation):
                 bird.distFromOpen = abs((lowerPipes[0]['y'] - PIPEGAPSIZE / 2) - bird.y)
                 crashedBirds += 1
 
-            if crashedBirds == len(birds) -1:
+            if crashedBirds == len(birds):
                 fitness = rankBirdsFitness(birds)
-                birds = generateBirds(birds, fitness, False, initx, inity, birdIndex, initVelY, initAccY,initRot)
+                if score != 0:
+                    birds = generateBirds(birds, fitness, False, initx, inity, birdIndex, initVelY, initAccY,initRot)
+                else:
+                    birds = generateBirds({}, {}, FIRST, initx, inity, birdIndex, initVelY, initAccY, initRot)
                 print("Birds: ", birds)
                 return birds, highscore
                 # return {
@@ -562,7 +565,7 @@ def checkCrash(bird, upperPipes, lowerPipes):
 
             if uCollide or lCollide:
                 print("COLLIDE")
-                return [False, False]
+                return [True, False]
 
     return [False, False]
 
@@ -585,10 +588,9 @@ def pixelCollision(rect1, rect2, hitmask1, hitmask2):
 def generateBirds(birds, fitness,  FIRST, initx, inity, birdIndex, initVelY,initAccY,initRot):
     if FIRST:
         for i in range(NUMBERBIRDS):
-            genetic = random.randint(0, 100)
             yplus = random.randint(30, 90)
             birds["Bird " + str(i)] = Bird(initx, inity + yplus, birdIndex, "Bird " + str(i), initVelY, initAccY,
-                                           initRot, genetic)
+                                           initRot, 0)
     else:
         print("New Gene")
         newGeneration = {}
@@ -596,19 +598,19 @@ def generateBirds(birds, fitness,  FIRST, initx, inity, birdIndex, initVelY,init
         winners = winners[::-1]
         print(' Winners', winners)
         first = birds[winners[0][0]]
-        print("First: ", first.key, first.genetic, first.index)
+        print("First: ", first.key, first.index)
         second = birds[winners[1][0]]
         third = birds[winners[2][0]]
         fourth = birds[winners[3][0]]
         selection = [first, second, third, fourth]
         newGeneration['Bird 0'] = Bird(initx, inity, first.index, "Bird " + str(0), initVelY, initAccY,
-                                       initRot, first.genetic)
+                                       initRot, first.network)
         newGeneration['Bird 1'] = Bird(initx, inity, second.index, "Bird " + str(1), initVelY, initAccY,
-                                       initRot, second.genetic)
+                                       initRot, second.network)
         newGeneration['Bird 2'] = Bird(initx, inity, third.index, "Bird " + str(2), initVelY, initAccY,
-                                       initRot, third.genetic)
+                                       initRot, third.network)
         newGeneration['Bird 3'] = Bird(initx, inity, fourth.index, "Bird " + str(3), initVelY, initAccY,
-                                       initRot, third.genetic)
+                                       initRot, third.network)
         newGeneration['Bird 4'] = Bird(initx, inity, first.index, "Bird " + str(4), initVelY, initAccY,
                                        initRot, crossOver(first, second))
         newGeneration['Bird 5'] = Bird(initx, inity, second.index, "Bird " + str(5), initVelY, initAccY,
@@ -620,15 +622,41 @@ def generateBirds(birds, fitness,  FIRST, initx, inity, birdIndex, initVelY,init
         birdOne = random.choice(list(birds.values()))
         birdTwo = random.choice(list(birds.values()))
         newGeneration['Bird 7'] = Bird(initx, inity, fourth.index, "Bird " + str(7), initVelY, initAccY,
-                                       initRot, crossOver(birdOne, birdTwo))
+                                       initRot, 0)
         birds = newGeneration
-        print(newGeneration.keys() )
+
     for bird in birds:
         print("Bird generate birds", birds[bird].key)
     return birds
 
 def crossOver(bird1, bird2):
-    return (bird1.genetic + bird2.genetic) / 2
+    print("entered")
+    network1 = bird1.network                      # Bird 1's neural network
+    network2 = bird2.network                        # Bird 2's neural network
+    numberHidden = network1.hidden                  # Number of Hidden Neurons
+    numberInputs = network1.inputs                  # Number of Inputs Neurons
+    mumberOutputs = network1.outputs                # Number of Outputs Neurons
+    crossHiddenNum = math.ceil(numberHidden / 2)    # This is the number of elements selected for crossover
+    crossIndex = list(range(0, numberHidden))       # This is used for selecting crossover weights in hidden layer
+    crossIndex2 = list(range(0, numberHidden))      # This is used for selecting crossover weights in output layer
+    newBias = []
+    for i in range(int(crossHiddenNum)):
+        selectionIndex = random.choice(crossIndex)
+        crossIndex.remove(selectionIndex)
+        temp = network1.network[0][selectionIndex]['weights']
+        network1.network[0][selectionIndex]['weights'] = network2.network[0][selectionIndex]['weights']
+        network2.network[0][selectionIndex]['weights'] = temp
+        selectionIndex = random.choice(crossIndex2)
+        crossIndex2.remove(selectionIndex)
+        temp = network1.network[1][0]['weights'][selectionIndex]
+        network1.network[1][0]['weights'][selectionIndex] = network2.network[1][0]['weights'][selectionIndex]
+        network2.network[1][0]['weights'][selectionIndex] = temp
+    for i in range(len(network1.bias)):
+        newBias.append((network1.bias[i] + network2.bias[i]) / 2)
+    network1.bias = newBias
+    network2.bias = newBias
+    return random.choice([network1, network2])
+
 
 
 def rankBirdsFitness(birds):
