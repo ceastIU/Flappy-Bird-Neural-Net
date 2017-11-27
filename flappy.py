@@ -14,7 +14,7 @@ SCREENHEIGHT = 512
 # amount by which base can maximum shift to left
 PIPEGAPSIZE  = 120 # gap between upper and lower part of pipe
 BASEY        = SCREENHEIGHT * 0.79
-PIPEDETERMINTISIC = True
+PIPEDETERMINTISIC = False
 DISPLAYSCREEN = True
 DISPLAYWELCOME = True
 GAMEOVERSCREEN = False
@@ -196,7 +196,7 @@ def showWelcomeAnimation():
                 # make first flap sound and return values for mainGame
                 SOUNDS['wing'].play()
                 return {
-                    'playery': playery + playerShmVals['val'],
+                    'playery': playery,
                     'basex': 80,
                     'playerIndexGen': playerIndexGen,
                 }
@@ -229,7 +229,7 @@ def pause():
 def mainGame(movementInfo, birds, highscore, generation):
     score = birdIndex = loopIter = 0
     playerIndexGen = movementInfo['playerIndexGen']
-    initx, inity = int(SCREENWIDTH * 0.2), movementInfo['playery']
+    initx, inity = int(SCREENWIDTH * 0.2), int(SCREENHEIGHT *.4)
     basex = movementInfo['basex']
     baseShift = IMAGES['base'].get_width() - IMAGES['background'].get_width()
 
@@ -261,7 +261,8 @@ def mainGame(movementInfo, birds, highscore, generation):
     initFlapAcc =  -9   # players speed on flapping
     birdFlapped = False # True when player flaps
     printIterator = 0
-
+    birdHeight = IMAGES['Bird 0'][0].get_height()
+    birdWidth = IMAGES['Bird 0'][0].get_width()
     crashedBirds = 0    # Number of birds crashed so far
     print("NUMBER birds = ", len(birds))
     if len(birds) == 0:
@@ -294,7 +295,7 @@ def mainGame(movementInfo, birds, highscore, generation):
 
             if crashedBirds == len(birds):
                 fitness = rankBirdsFitness(birds)
-                if score != 0:
+                if score > 0:
                     birds = generateBirds(birds, fitness, False, initx, inity, birdIndex, initVelY, initAccY,initRot)
                 else:
                     birds = generateBirds({}, {}, FIRST, initx, inity, birdIndex, initVelY, initAccY, initRot)
@@ -307,30 +308,26 @@ def mainGame(movementInfo, birds, highscore, generation):
                 #     'upperPipes': upperPipes,
                 #     'lowerPipes': lowerPipes,
                 #     'score': score,
-                #     'VelY': birds["Bird 0"].velY,
+                #     'VelY': birds["Bird 0"].velY
                 #     'Rot': birds["Bird 0"].rot
                 # }
+            if bird.moving:
+                birdMidPos = bird.x + IMAGES[bird.key][0].get_width() / 2
+                neural_input_x = (lowerPipes[0]['x'] + (IMAGES['pipe'][0].get_width() /2)) - birdMidPos
+                neural_input_y = (lowerPipes[0]['y'] - PIPEGAPSIZE / 2) - (bird.y + birdHeight / 2)
+                if neural_input_x < 0:
+                    neural_input_x = (lowerPipes[1]['x'] + (IMAGES['pipe'][0].get_width() /2)) - birdMidPos
+                    neural_input_y = (lowerPipes[1]['y'] - PIPEGAPSIZE / 2) - (bird.y + birdHeight / 2)
+                #print(bird.key,": ", neural_input_x, " : ", neural_input_y, len(upperPipes))
 
-            birdMidPos = bird.x + IMAGES[bird.key][0].get_width() / 2
-            neural_input_x = lowerPipes[0]['x'] - (IMAGES['pipe'][0].get_width() /4) - bird.x
-            if neural_input_x < 0:
-                neural_input_x = lowerPipes[1]['x'] - (IMAGES['pipe'][1].get_width() /4) - bird.x
-            neural_input_y = (lowerPipes[0]['y'] - PIPEGAPSIZE / 2) - bird.y
-            #print("!!!!",(lowerPipes[0]['y'] - PIPEGAPSIZE / 2))
-            if bird.key == "Bird 0":
-                print("Bird x,y: ", neural_input_x, " : ", neural_input_y)
+                if bird.flaps(neural_input_x, neural_input_y) and bird.y > -2 * IMAGES[bird.key][0].get_height():
+                    bird.velY = bird.flapAcc
+                    bird.flapped = True
+                    SOUNDS['wing'].play()
 
-
-            #if bird.y - random.randint(15,55) > lowerPipes[0]['y'] - 50 and bird.moving:
-            if bird.flaps(neural_input_x, neural_input_y) and bird.y > -2 * IMAGES[bird.key][0].get_height():
-                bird.velY = bird.flapAcc
-                bird.flapped = True
-                SOUNDS['wing'].play()
-
-            if not bird.moving:
-                bird.x += pipeVelX
-            else:
                 bird.distTraveled -= pipeVelX
+            else:
+                bird.x += pipeVelX
 
             for pipe in upperPipes:
                 pipeMidPos = pipe['x'] + IMAGES['pipe'][0].get_width() / 2
@@ -588,7 +585,7 @@ def pixelCollision(rect1, rect2, hitmask1, hitmask2):
 def generateBirds(birds, fitness,  FIRST, initx, inity, birdIndex, initVelY,initAccY,initRot):
     if FIRST:
         for i in range(NUMBERBIRDS):
-            yplus = random.randint(30, 90)
+            yplus = 0 # random.randint(5,15)
             birds["Bird " + str(i)] = Bird(initx, inity + yplus, birdIndex, "Bird " + str(i), initVelY, initAccY,
                                            initRot, 0)
     else:
@@ -598,19 +595,22 @@ def generateBirds(birds, fitness,  FIRST, initx, inity, birdIndex, initVelY,init
         winners = winners[::-1]
         print(' Winners', winners)
         first = birds[winners[0][0]]
-        print("First: ", first.key, first.index)
+        print("First: ", first.key, first.network.network)
+        print(first.network.bias)
         second = birds[winners[1][0]]
         third = birds[winners[2][0]]
         fourth = birds[winners[3][0]]
         selection = [first, second, third, fourth]
         newGeneration['Bird 0'] = Bird(initx, inity, first.index, "Bird " + str(0), initVelY, initAccY,
-                                       initRot, first.network)
+                                       initRot, mutation(first.network))
+        print('First\'s network',newGeneration['Bird 0'].network.network)
+        print(newGeneration['Bird 0'].network.bias)
         newGeneration['Bird 1'] = Bird(initx, inity, second.index, "Bird " + str(1), initVelY, initAccY,
-                                       initRot, second.network)
+                                       initRot, mutation(first.network))
         newGeneration['Bird 2'] = Bird(initx, inity, third.index, "Bird " + str(2), initVelY, initAccY,
-                                       initRot, third.network)
+                                       initRot, mutation(second.network))
         newGeneration['Bird 3'] = Bird(initx, inity, fourth.index, "Bird " + str(3), initVelY, initAccY,
-                                       initRot, third.network)
+                                       initRot, mutation(third.network))
         newGeneration['Bird 4'] = Bird(initx, inity, first.index, "Bird " + str(4), initVelY, initAccY,
                                        initRot, crossOver(first, second))
         newGeneration['Bird 5'] = Bird(initx, inity, second.index, "Bird " + str(5), initVelY, initAccY,
@@ -622,12 +622,34 @@ def generateBirds(birds, fitness,  FIRST, initx, inity, birdIndex, initVelY,init
         birdOne = random.choice(list(birds.values()))
         birdTwo = random.choice(list(birds.values()))
         newGeneration['Bird 7'] = Bird(initx, inity, fourth.index, "Bird " + str(7), initVelY, initAccY,
-                                       initRot, 0)
+                                       initRot, crossOver(birdOne, birdTwo))
         birds = newGeneration
 
-    for bird in birds:
-        print("Bird generate birds", birds[bird].key)
     return birds
+
+def mutation(network, MUT_RATE=.2):
+    # if random.random() < MUT_RATE:
+    #     index = random.randint(0, len(network.network[0]) - 1)
+    #     for i in range(len(network.network[0][index]['weights'])):
+    #         print(network.network[0][index]['weights'][i])
+    #         network.network[0][index]['weights'][i] += random.triangular(-1, 1) * network.network[0][index]['weights'][i]
+    #
+    #     print("After: ", network.network[0][index]['weights'])
+    # return network
+
+    print("Before: ", network.network[0])
+    index = random.randint(0, len(network.network[0]) - 1)
+    for index in range(len(network.network[0])):
+        for i in range(len(network.network[0][index]['weights'])):
+            if random.random() < MUT_RATE:
+                network.network[0][index]['weights'][i] += random.triangular(-1, 1) * network.network[0][index]['weights'][i]
+    #print('bias', network.bias[0])
+    # for index in range(len(network.bias[0])):
+    #     if random.random() < MUT_RATE:
+    #         network.bias[0][index] += random.triangular(-1, 1) * network.bias[0][index]
+    # print('A bias', network.bias[0])
+    # print("After: ", network.network[0])
+    return network
 
 def crossOver(bird1, bird2):
     print("entered")
@@ -639,7 +661,9 @@ def crossOver(bird1, bird2):
     crossHiddenNum = math.ceil(numberHidden / 2)    # This is the number of elements selected for crossover
     crossIndex = list(range(0, numberHidden))       # This is used for selecting crossover weights in hidden layer
     crossIndex2 = list(range(0, numberHidden))      # This is used for selecting crossover weights in output layer
+    corssIndex3 = list(range(0, numberHidden))
     newBias = []
+    print('!!!Bias:', network1.bias)
     for i in range(int(crossHiddenNum)):
         selectionIndex = random.choice(crossIndex)
         crossIndex.remove(selectionIndex)
@@ -651,11 +675,12 @@ def crossOver(bird1, bird2):
         temp = network1.network[1][0]['weights'][selectionIndex]
         network1.network[1][0]['weights'][selectionIndex] = network2.network[1][0]['weights'][selectionIndex]
         network2.network[1][0]['weights'][selectionIndex] = temp
+
     for i in range(len(network1.bias)):
         newBias.append((network1.bias[i] + network2.bias[i]) / 2)
     network1.bias = newBias
     network2.bias = newBias
-    return random.choice([network1, network2])
+    return mutation(random.choice([network1, network2]))
 
 
 

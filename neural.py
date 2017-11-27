@@ -1,27 +1,72 @@
-from keras.models import Sequential
-from keras.layers import Dense
-import numpy
-# fix random seed for reproducibility
-numpy.random.seed(7)
+import math
+from random import seed
+from random import random
+import random
+import numpy as np
 
-# load pima indians dataset
-dataset = numpy.loadtxt("pima-indians-diabetes.csv", delimiter=",")
-# split into input (X) and output (Y) variables
-X = dataset[:,0:8]
-Y = dataset[:,8]
+class Net:
+    def __init__(self, n_inputs, n_outputs, n_hidden=6):
+        self.height = 190
+        self.distance = 142
+        self.inputs = n_inputs
+        self.hidden = n_hidden
+        self.outputs = n_outputs
+        self.network = list()
+        #self.weights = weights
+        self.bias = []
+        self.init_net()
 
-# define nural net
-model = Sequential()
-model.add(Dense(12, input_dim=8, activation='relu'))
-model.add(Dense(8, activation='relu'))
-model.add(Dense(1, activation='sigmoid'))
 
-# Compile model
-model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    # Initialize a network
+    def init_net(self):
+        self.network = list()
+        # Add first bias for inputs
+        self.bias.append(self.genWeights(self.hidden))
 
-# Fit the model
-model.fit(X, Y, epochs=150, batch_size=10)
+        # Initialize and append the hidden layer to the network
+        hidden_layer = [{'weights': self.genWeights(self.inputs)} for i in range(self.hidden)]
+        self.network.append(hidden_layer)
 
-#evaluate the model
-scores = model.evaluate(X, Y)
-print("\n%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+        # Add second bias for outputs
+        self.bias.append(self.genWeights(self.outputs))
+
+        # Initialize and append the output layer to the network
+        output_layer = [{'weights': self.genWeights(self.hidden)} for i in range(self.outputs)]
+        self.network.append(output_layer)
+
+
+    # Generates a numpy array of random  numbers from a uniform distribution from -1,1 of length n
+    def genWeights(self, n):
+        weights = []
+        for x in range(n):
+            weights.append(random.uniform(-1, 1))
+        return np.array(weights)
+
+    # Calculate neuron activation for an input
+    def activate(self, weights, inputs, bias):
+        return weights.dot(inputs) + bias
+
+    # Transfer neuron activation
+    def transfer(self, activation):
+        return 1.0 / (1.0 + math.exp(-activation))
+
+    # Forward propagate input to a network output
+    def propagate(self, inputs):
+        inputs = np.array([inputs[0], inputs[1]])
+        index = 0
+        for layer in self.network:
+            new_inputs = []
+            bias = self.bias[index]
+            index += 1
+            index2 = 0
+            for neuron in layer:
+                activation = self.activate(neuron['weights'], inputs, bias[index2])
+                index2 += 1
+                neuron['output'] = self.transfer(activation)
+                new_inputs.append(neuron['output'])
+            inputs = new_inputs
+        return inputs
+
+    def get_net(self):
+        return self.network
+

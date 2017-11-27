@@ -1,13 +1,13 @@
 import random
 
-from testneural import Net
+from neural import Net
 
-
+# The main bird class
 class Bird:
-    def __init__(self,initx, inity, index, key, initVelY,initAccY,initRot,net=0):
+    def __init__(self,initx, inity, index, key, initVelY, initAccY, initRot,net=0):
         n_inputs = 2
         n_outputs = 1
-        #
+
         self.x              = initx
         self.y              = inity
         self.key            = key
@@ -35,9 +35,10 @@ class Bird:
     def calculate_fitness(self):
         return self.score + self.distTraveled - self.distFromOpen
 
+    # Determines if the birds flaps, calling on it's neural net
     def flaps(self, inputX, inputY):
         flaps = self.network.propagate((inputX, inputY))[0]
-        if self.key == "Bird 0":
-            print("Output ", flaps)
+        #if self.moving:
+        #    print("Output ", flaps)
         return flaps > .50
-        #return random.random() > .9
+
