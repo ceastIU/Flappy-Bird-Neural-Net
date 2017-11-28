@@ -1,5 +1,15 @@
 NOTE: This implementation borrows and modifies a PyGame Version of flappy bird found at https://github.com/sourabhv/FlapPyBird, by Sourabh Verma (sourabhv)
 
+                            Flappy Bird with neural network and use of Genetic Algorithms
+                                                   -Group Members-
+                                                   Keiland Cooper
+                                                   Kirk Harlow
+                                                   Christopher East
+
+Project description: Design an AI-based project for IU's CSCI-B 351 - Intro to Artificial Intelligence. The team designed
+                     a flappy bird clone that uses two technologies: Neural Networks and Genetic Algorithms. These technologies
+                     allows the game to evolve a bird to play the game
+
 
 FlappyBirdClone
 ===============
