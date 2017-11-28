@@ -5,7 +5,7 @@ import random
 import numpy as np
 
 class Net:
-    def __init__(self, n_inputs, n_outputs, n_hidden=6):
+    def __init__(self, n_inputs, n_outputs, n_net=False, n_bias=False, n_hidden=6):
         self.height = 190
         self.distance = 142
         self.inputs = n_inputs
@@ -13,8 +13,14 @@ class Net:
         self.outputs = n_outputs
         self.network = list()
         #self.weights = weights
-        self.bias = []
-        self.init_net()
+        if not n_bias:
+            self.bias = []
+        else:
+            self.bias = n_bias
+        if not n_net:
+            self.init_net()
+        else:
+            self.network = n_net
 
 
     # Initialize a network
@@ -47,8 +53,10 @@ class Net:
         return weights.dot(inputs) + bias
 
     # Transfer neuron activation
-    def transfer(self, activation):
-        return 1.0 / (1.0 + math.exp(-activation))
+    def transfer(self, gamma):
+        if gamma < 0:
+            return 1 - 1 / (1 + math.exp(gamma))
+        return 1 / (1 + math.exp(-gamma))
 
     # Forward propagate input to a network output
     def propagate(self, inputs):
