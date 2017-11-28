@@ -38,7 +38,5 @@ class Bird:
     # Determines if the birds flaps, calling on it's neural net
     def flaps(self, inputX, inputY):
         flaps = self.network.propagate((inputX, inputY))[0]
-        #if self.moving:
-        #    print("Output ", flaps)
         return flaps > .50
 

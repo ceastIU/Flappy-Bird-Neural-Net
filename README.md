@@ -17,7 +17,7 @@ How-to
 
 4. Run `python flappy.py` from the repo's directory
 
-5. use <kbd>&uarr;</kbd> or <kbd>Space</kbd> key to play, <kbd>p;</kbd> key to pause and <kbd>Esc</kbd> to close the game.
+5. use <kbd>&uarr;</kbd> or <kbd>Space</kbd> key to play, <kbd>p</kbd> key to pause and <kbd>Esc</kbd> to close the game.
 
   (Note: Install pyGame for same version python as above)
 
@@ -29,3 +29,15 @@ ScreenShot
 ![Flappy Bird](screenshot1.png)
 
 [1]: http://www.pygame.org
+
+Breakdown of files
+------------------
+Asset Folder    - Contains all sprites and sound files for generating game
+bird.py         - Python file for the bird class
+flappy.py       - Python file containing the main code for the game, and the generating, selecting, and modifing of birds
+                  occurs
+neural.py       - Python file for the neural net class and its methods
+setup.py        - Python file for setting up the background of the game
+
+
+

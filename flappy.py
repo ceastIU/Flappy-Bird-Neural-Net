@@ -10,12 +10,12 @@ import math
 from bird import Bird
 from neural import Net
 
-FPS = 100
+
+FPS = 55
 SCREENWIDTH  = 288
 SCREENHEIGHT = 512
-# amount by which base can maximum shift to left
-PIPEGAPSIZE  = 120 # gap between upper and lower part of pipe
-BASEY        = SCREENHEIGHT * 0.79
+PIPEGAPSIZE  = 105 # gap between upper and lower part of pipe
+BASEY        = SCREENHEIGHT * 0.79 # amount by which base can maximum shift to left
 PIPEDETERMINTISIC = False
 DISPLAYSCREEN = True
 DISPLAYWELCOME = True
@@ -262,11 +262,8 @@ def mainGame(movementInfo, birds, highscore, generation):
     initRotThr  =  20   # rotation threshold
     initFlapAcc =  -9   # players speed on flapping
     birdFlapped = False # True when player flaps
-    printIterator = 0
     birdHeight = IMAGES['Bird 0'][0].get_height()
-    birdWidth = IMAGES['Bird 0'][0].get_width()
     crashedBirds = 0    # Number of birds crashed so far
-    print("NUMBER birds = ", len(birds))
     if len(birds) == 0:
         birds = generateBirds({}, {}, FIRST, initx, inity, birdIndex, initVelY,initAccY,initRot)
     while True:
@@ -291,6 +288,7 @@ def mainGame(movementInfo, birds, highscore, generation):
                 crashTest = checkCrash(bird, upperPipes, lowerPipes)
             if crashTest[0] and bird.moving:
                 print(bird.key, "tuned off")
+                SOUNDS['die'].play()
                 bird.moving = False
                 bird.distFromOpen = abs((lowerPipes[0]['y'] - PIPEGAPSIZE / 2) - bird.y)
                 crashedBirds += 1
@@ -301,7 +299,6 @@ def mainGame(movementInfo, birds, highscore, generation):
                     birds = generateBirds(birds, fitness, False, initx, inity, birdIndex, initVelY, initAccY,initRot)
                 else:
                     birds = generateBirds({}, {}, FIRST, initx, inity, birdIndex, initVelY, initAccY, initRot)
-                print("Birds: ", birds)
                 return birds, highscore
 
             if bird.moving:
@@ -427,35 +424,6 @@ def showGameOverScreen(birds):
                 sys.exit()
             if (event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP)) or True:
                 return birds
-        # # player y shift
-        # if playery + playerHeight < BASEY - 1:
-        #     playery += min(playerVelY, BASEY - playery - playerHeight)
-        #
-        # # player velocity change
-        # if playerVelY < 15:
-        #     playerVelY += playerAccY
-        #
-        # # rotate only when it's a pipe crash
-        # if not crashInfo['groundCrash']:
-        #     if playerRot > -90:
-        #         playerRot -= playerVelRot
-        #
-        # # draw sprites
-        # SCREEN.blit(IMAGES['background'], (0,0))
-        #
-        # for uPipe, lPipe in zip(upperPipes, lowerPipes):
-        #     SCREEN.blit(IMAGES['pipe'][0], (uPipe['x'], uPipe['y']))
-        #     SCREEN.blit(IMAGES['pipe'][1], (lPipe['x'], lPipe['y']))
-        #
-        # SCREEN.blit(IMAGES['base'], (basex, BASEY))
-        # showScore(score)
-        #
-        # playerSurface = pygame.transform.rotate(IMAGES['Bird 0'][1], playerRot)
-        # SCREEN.blit(playerSurface, (playerx,playery))
-        #
-        # FPSCLOCK.tick(FPS)
-        # pygame.display.update()
-
 
 def playerShm(playerShm):
     """oscillates the value of playerShm['val'] between 8 and -8"""
@@ -581,13 +549,10 @@ def generateBirds(birds, fitness,  FIRST, initx, inity, birdIndex, initVelY,init
             birds["Bird " + str(i)] = Bird(initx, inity + yplus, birdIndex, "Bird " + str(i), initVelY, initAccY,
                                            initRot, 0)
     else:
-        print("New Gene")
         newGeneration = {}
         winners = fitness[-4:]
         winners = winners[::-1]
         first = birds[winners[0][0]]
-        print("First: ", first.key, first.network.network)
-        print(first.network.bias)
         second = birds[winners[1][0]]
         third = birds[winners[2][0]]
         fourth = birds[winners[3][0]]
@@ -597,14 +562,12 @@ def generateBirds(birds, fitness,  FIRST, initx, inity, birdIndex, initVelY,init
         newGeneration['Bird 0'] = Bird(initx, inity, first.index, "Bird " + str(0), initVelY, initAccY,
                                        initRot, Net(numInputs, numOutputs, deepcopy(first.network.network),
                                                              deepcopy(first.network.bias)))
-        #print('First\'s network',newGeneration['Bird 0'].network.network)
-        print(newGeneration['Bird 0'].network.bias)
         newGeneration['Bird 1'] = Bird(initx, inity, second.index, "Bird " + str(1), initVelY, initAccY,
                                        initRot, mutation(Net(numInputs, numOutputs, deepcopy(first.network.network),
-                                                             deepcopy(first.network.bias),.1)))
+                                                             deepcopy(first.network.bias),.05)))
         newGeneration['Bird 2'] = Bird(initx, inity, third.index, "Bird " + str(2), initVelY, initAccY,
                                        initRot, mutation(Net(numInputs, numOutputs, deepcopy(first.network.network),
-                                                             deepcopy(first.network.bias)), .15))
+                                                             deepcopy(first.network.bias)), .10))
         newGeneration['Bird 3'] = Bird(initx, inity, fourth.index, "Bird " + str(3), initVelY, initAccY,
                                        initRot, mutation(Net(numInputs, numOutputs, deepcopy(first.network.network),
                                                              deepcopy(second.network.bias)), .15))
@@ -617,7 +580,7 @@ def generateBirds(birds, fitness,  FIRST, initx, inity, birdIndex, initVelY,init
         newGeneration['Bird 6'] = Bird(initx, inity, first.index, "Bird " + str(6), initVelY, initAccY,
                                        initRot, crossOver(first, second))
         newGeneration['Bird 7'] = Bird(initx, inity, second.index, "Bird " + str(7), initVelY, initAccY,
-                                       initRot, crossOver(third, fourth))
+                                       initRot, crossOver(second, third))
         birdOne = random.choice(selection)
         birdTwo = random.choice(selection)
         newGeneration['Bird 8'] = Bird(initx, inity, third.index, "Bird " + str(8), initVelY, initAccY,
@@ -631,25 +594,15 @@ def generateBirds(birds, fitness,  FIRST, initx, inity, birdIndex, initVelY,init
     return birds
 
 def mutation(network, MUT_RATE=.2):
-    # if random.random() < MUT_RATE:
-    #     index = random.randint(0, len(network.network[0]) - 1)
-    #     for i in range(len(network.network[0][index]['weights'])):
-    #         print(network.network[0][index]['weights'][i])
-    #         network.network[0][index]['weights'][i] += random.triangular(-1, 1) * network.network[0][index]['weights'][i]
-    #
-    #     print("After: ", network.network[0][index]['weights'])
-    # return network
-
-    index = random.randint(0, len(network.network[0]) - 1)
     for index in range(len(network.network[0])):
         for i in range(len(network.network[0][index]['weights'])):
             if random.random() < MUT_RATE:
-                network.network[0][index]['weights'][i] += random.triangular(-1, 1) + network.network[0][index]['weights'][i]
+                network.network[0][index]['weights'][i] += random.triangular(-1, 1) * network.network[0][index]['weights'][i]
     return network
 
 # Cross over is a genetic concepts and this creates new offspring from two parents
 def crossOver(bird1, bird2, MUT_RATE=0.2):
-    print("entered")
+
     network1 = deepcopy(bird1.network)              # Bird 1's neural network
     network2 = deepcopy(bird2.network)              # Bird 2's neural network
     numberHidden = int(network1.hidden)             # Number of Hidden Neurons
@@ -660,7 +613,6 @@ def crossOver(bird1, bird2, MUT_RATE=0.2):
     crossIndex2 = list(range(0, numberHidden))      # This is used for selecting crossover weights in output layer
     corssIndex3 = list(range(0, numberHidden))
     newBias = []
-    print('!!!Bias:', network1.bias)
     for i in range(int(crossHiddenNum)):
         selectionIndex = random.choice(crossIndex)
         crossIndex.remove(selectionIndex)
@@ -680,11 +632,8 @@ def crossOver(bird1, bird2, MUT_RATE=0.2):
 def rankBirdsFitness(birds):
     fitness = []
     for bird in birds:
-        print(fitness)
         bird = birds[bird]
-        print(bird.key)
         if len(fitness) == 0:
-            print("---once----")
             fitness.append((bird.key, bird.calculate_fitness(), bird))
         else:
             inserted = False
