@@ -53,10 +53,16 @@ neural.py       - Python file for the neural net class and its methods
 
 setup.py        - Python file for setting up the background of the game
 
+{::nomarkdown}
+
+
 <video width="320" height="240" controls>
   <source src="Flappy Video AdvanceTrim.mp4" type="video/mp4">
 Your browser does not support the video tag.
 </video>
+<!-- HTML CODE-->
+
+{:/}
 
 
 
