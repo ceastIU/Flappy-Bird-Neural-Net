@@ -43,11 +43,20 @@ ScreenShot
 Breakdown of files
 ------------------
 Asset Folder    - Contains all sprites and sound files for generating game
+
 bird.py         - Python file for the bird class
+
 flappy.py       - Python file containing the main code for the game, and the generating, selecting, and modifing of birds
                   occurs
+                  
 neural.py       - Python file for the neural net class and its methods
+
 setup.py        - Python file for setting up the background of the game
+
+<video width="320" height="240" controls>
+  <source src="Flappy Video AdvanceTrim.mp4" type="video/mp4">
+Your browser does not support the video tag.
+</video>
 
 
 
