@@ -62,6 +62,6 @@ Your browser does not support the video tag.
 <!-- HTML CODE-->
 
 ```
-[![Demo CountPages alpha](https://share.gifyoutube.com/KzB6Gb.gif)](https://www.youtube.com/watch?v=ek1j272iAmc)
+<!--[![Demo CountPages alpha](https://share.gifyoutube.com/KzB6Gb.gif)](https://www.youtube.com/watch?v=ek1j272iAmc)-->
 
 <img src="output.gif">
