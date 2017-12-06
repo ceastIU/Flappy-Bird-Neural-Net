@@ -23,6 +23,9 @@ GAMEOVERSCREEN = False
 NUMBERBIRDS = 10
 FIRST = True
 
+GENERATIONLIMIT = 20
+SCORELIMIT = 100
+
 HIGHSCORE = 0
 GENERATION = 0
 
@@ -154,7 +157,7 @@ def main():
             )
 
         movementInfo = showWelcomeAnimation()
-        birds_m, highscore = mainGame(movementInfo, birds, highscore, generation)
+        birds_m, highscore, generation = mainGame(movementInfo, birds, highscore, generation)
         birds = showGameOverScreen(birds_m)
         generation += 1
 
@@ -251,7 +254,7 @@ def mainGame(movementInfo, birds, highscore, generation):
         {'x': SCREENWIDTH/2+50 + (SCREENWIDTH / 2), 'y': newPipe2[1]['y']},
     ]
     pipeVelX = -4
-
+    generation = generation
     # player velocity, max velocity, downward accleration, accleration on flap
     initVelY    =  -9   # player's velocity along Y, default same as playerFlapped
     initMaxVelY =  10   # max vel along Y, max descend speed
@@ -295,11 +298,15 @@ def mainGame(movementInfo, birds, highscore, generation):
 
             if crashedBirds == len(birds):
                 fitness = rankBirdsFitness(birds)
-                if score > 0:
+                if score < SCORELIMIT and generation >= GENERATIONLIMIT:
+                    birds = generateBirds(birds, fitness, False, initx, inity, birdIndex, initVelY, initAccY, initRot)
+                    generation = 0
+                elif score > 0:
                     birds = generateBirds(birds, fitness, False, initx, inity, birdIndex, initVelY, initAccY,initRot)
                 else:
                     birds = generateBirds({}, {}, FIRST, initx, inity, birdIndex, initVelY, initAccY, initRot)
-                return birds, highscore
+                    generation = 0
+                return birds, highscore, generation
 
             if bird.moving:
                 birdMidPos = bird.x + IMAGES[bird.key][0].get_width() / 2
