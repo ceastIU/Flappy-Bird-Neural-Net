@@ -12,7 +12,6 @@ class Net:
         self.hidden = n_hidden
         self.outputs = n_outputs
         self.network = list()
-        #self.weights = weights
         if not n_bias:
             self.bias = []
         else:

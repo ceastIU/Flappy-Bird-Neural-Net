@@ -11,7 +11,7 @@ from bird import Bird
 from neural import Net
 
 
-FPS = 55
+FPS = 120
 SCREENWIDTH  = 288
 SCREENHEIGHT = 512
 PIPEGAPSIZE  = 105 # gap between upper and lower part of pipe
