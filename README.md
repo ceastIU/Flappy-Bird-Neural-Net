@@ -65,3 +65,8 @@ Your browser does not support the video tag.
 <!--[![Demo CountPages alpha](https://share.gifyoutube.com/KzB6Gb.gif)](https://www.youtube.com/watch?v=ek1j272iAmc)-->
 [Intro.pdf](https://github.com/ceastIU/Flappy-Bird-Neural-Net/blob/master/Presentation/flap(AI).pdf)
 <img src="output.gif">
+<object data="https://github.com/ceastIU/Flappy-Bird-Neural-Net/blob/master/Presentation/flap(AI).pdf" type="application/pdf" width="700px" height="700px">
+    <embed src="https://github.com/ceastIU/Flappy-Bird-Neural-Net/blob/master/Presentation/flap(AI).pdf">
+        This browser does not support PDFs. Please download the PDF to view it: <a href="http://yoursite.com/the.pdf">Download PDF</a>.</p>
+    </embed>
+</object>
