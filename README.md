@@ -63,5 +63,5 @@ Your browser does not support the video tag.
 
 ```
 <!--[![Demo CountPages alpha](https://share.gifyoutube.com/KzB6Gb.gif)](https://www.youtube.com/watch?v=ek1j272iAmc)-->
-[Intro.pdf](https://github.com/ceastIU/Flappy-Bird-Neural-Net/edit/master/presentation/flap(AI).pdf)
+[Intro.pdf](https://github.com/ceastIU/Flappy-Bird-Neural-Net/blob/master/Presentation/flap(AI).pdf)
 <img src="output.gif">
